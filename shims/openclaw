@@ -1,0 +1,25 @@
+#!/bin/sh
+# Shim: make `openclaw gateway stop` mean what alphaclaw intends it to mean.
+#
+# alphaclaw stops the gateway from its SIGTERM/SIGINT handlers (gateway.js:352,356 in
+# 0.9.16) by shelling out to `openclaw gateway stop`. OpenClaw 2.0 added a guard to that
+# command:
+#
+#   This stops the operator's running gateway service. Use an isolated dev gateway
+#   (openclaw gateway run --dev, ...) ... or re-run with --force if you really mean it.
+#
+# so the call exits 1 and the gateway is never asked to shut down. The container then kills
+# it, which is an unclean stop of a process holding sqlite session state. The guard is aimed
+# at a human on a dev box typing into someone else's operator gateway; inside this image
+# alphaclaw IS the operator, and it does mean it.
+#
+# A shim rather than a patch to node_modules: it lives in our repo, survives npm ci, and is
+# one file to delete when alphaclaw ships a release that passes --force itself. Everything
+# other than a bare `gateway stop` is passed through untouched.
+REAL=/app/node_modules/.bin/openclaw
+
+if [ "$1" = "gateway" ] && [ "$2" = "stop" ] && [ "$#" -eq 2 ]; then
+  exec "$REAL" gateway stop --force
+fi
+
+exec "$REAL" "$@"

@@ -7,7 +7,11 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --prefer-online && npm cache clean --force
 
-ENV PATH="/app/node_modules/.bin:$PATH"
+# The shim directory comes FIRST so `openclaw` resolves to it and not to the real binary
+# in node_modules/.bin. See shims/openclaw for why.
+COPY shims/openclaw /opt/shims/openclaw
+RUN chmod +x /opt/shims/openclaw
+ENV PATH="/opt/shims:/app/node_modules/.bin:$PATH"
 ENV ALPHACLAW_ROOT_DIR=/data
 
 RUN mkdir -p /data
