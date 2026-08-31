@@ -11,6 +11,11 @@ RUN npm ci --omit=dev --prefer-online && npm cache clean --force
 # in node_modules/.bin. See shims/openclaw for why.
 COPY shims/openclaw /opt/shims/openclaw
 RUN chmod +x /opt/shims/openclaw
+
+# alphaclaw seeds a legacy exec-approvals.json on every boot; OpenClaw 2.0 refuses all
+# runtime access while that file exists. See the script for the full explanation.
+COPY shims/disable-legacy-exec-approvals.js /opt/shims/disable-legacy-exec-approvals.js
+RUN node /opt/shims/disable-legacy-exec-approvals.js
 ENV PATH="/opt/shims:/app/node_modules/.bin:$PATH"
 ENV ALPHACLAW_ROOT_DIR=/data
 
